@@ -1,10 +1,14 @@
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { buildHTTPExecutor } from '@graphql-tools/executor-http';
-import { type Executor, isAsyncIterable } from '@graphql-tools/utils';
+import {
+  type Executor,
+  isAsyncIterable,
+  filterSchema,
+} from '@graphql-tools/utils';
 import { buildSchema, GraphQLSchema, parse } from 'graphql';
 import { SubschemaConfig } from '@graphql-tools/delegate';
 
-import { stitchRelaySubschemas } from './relay-stitch';
+import { stitchMedleySubschemas } from './stitch';
 import { GatewayOptions, SubschemaOptions } from './types';
 
 async function fetchRemoteSchema(executor: Executor) {
@@ -12,7 +16,7 @@ async function fetchRemoteSchema(executor: Executor) {
     document: parse(`{ _sdl }`),
   });
   if (isAsyncIterable(introspectionResult)) {
-    throw new Error('🚨 Expected executor to return a single result');
+    throw new Error('🚨 Expected executor to return a single result!');
   }
   return buildSchema(introspectionResult.data._sdl);
 }
@@ -25,12 +29,22 @@ async function createSubschema(
     config.schema = await fetchRemoteSchema(executor);
   }
 
+  class removeSdlFromQueryTransform {
+    transformSchema(originalWrappingSchema: GraphQLSchema) {
+      return filterSchema({
+        schema: originalWrappingSchema,
+        rootFieldFilter: (_operationName, fieldName) => fieldName !== '_sdl',
+      });
+    }
+  }
+
   const subschemaConfig: SubschemaConfig = {
     schema: config.schema,
     executor: buildHTTPExecutor({
       endpoint: config.url,
       headers: config.headers,
     }),
+    transforms: [new removeSdlFromQueryTransform()],
     batch: true,
   };
 
@@ -44,7 +58,7 @@ export async function createGatewaySchema(
     options.subschema.map((config) => createSubschema(config))
   );
   const schema = stitchSchemas({
-    subschemas: stitchRelaySubschemas(subschemas, options.getTypeNameFromId),
+    subschemas: stitchMedleySubschemas(subschemas, options.getTypeNameFromId),
     mergeTypes: true,
   });
   return schema;

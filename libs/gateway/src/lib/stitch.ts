@@ -2,16 +2,24 @@ import { MergedTypeConfig, SubschemaConfig } from '@graphql-tools/delegate';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { isInterfaceType } from 'graphql';
 
-//TODO: enable batching on these merges
-const defaultRelayMergeConfig: MergedTypeConfig = {
-  fieldName: 'node',
-  selectionSet: '{ id }',
-  args: ({ id }) => ({ id: id }),
-  //key: ({ id: id }) => id,
-  //argsFromKeys: (ids) => ({ ids }),
+const defaultMedleyMergeConfig: MergedTypeConfig = {
+  entryPoints: [
+    {
+      fieldName: 'nodes',
+      selectionSet: '{ id }',
+      key: ({ id: id }) => id,
+      argsFromKeys: (ids) => ({ ids }),
+    },
+    {
+      fieldName: 'nodes',
+      selectionSet: '{ _stitchedTypeMarker }',
+      key: ({ _stitchedTypeMarker: id }) => id,
+      argsFromKeys: (ids) => ({ ids }),
+    },
+  ],
 };
 
-export function stitchRelaySubschemas(
+export function stitchMedleySubschemas(
   subschemas: SubschemaConfig[],
   getTypeNameFromId: (id: string) => string
 ) {
@@ -27,13 +35,13 @@ export function stitchRelaySubschemas(
       for (const implementedType of implementations) {
         typeNames.push(implementedType.name);
         subschema.merge = subschema.merge || {};
-        subschema.merge[implementedType.name] = defaultRelayMergeConfig;
+        subschema.merge[implementedType.name] = defaultMedleyMergeConfig;
       }
       subschema.batch = true;
     }
   }
 
-  const relaySubschemaConfig: SubschemaConfig = {
+  const MedleySubschemaConfig: SubschemaConfig = {
     schema: makeExecutableSchema({
       typeDefs: /* GraphQL */ `
         type Query {
@@ -41,13 +49,13 @@ export function stitchRelaySubschemas(
           nodes(ids: [ID!]!): [Node]!
         }
         interface Node {
-          id: ID!
+          _stitchedTypeMarker: ID! # marks this type as a medley stitched type
         }
         ${typeNames
           .map(
-            (typeName) => `
+            (typeName) => /* GraphQL */ `
           type ${typeName} implements Node {
-            id: ID!
+            _stitchedTypeMarker: ID! # marks this type as a medley stitched type
           }
         `
           )
@@ -55,19 +63,23 @@ export function stitchRelaySubschemas(
       `,
       resolvers: {
         Query: {
-          node: (_, { id }: { id: string }) => ({ id: id }),
+          node: (_, { id }: { id: string }) => ({ _stitchedTypeMarker: id }),
           nodes: (_, { ids }: { ids: string[] }) => {
-            return ids.map((id) => ({ id: id }));
+            return ids.map((id) => ({ _stitchedTypeMarker: id }));
           },
         },
         Node: {
-          __resolveType: ({ id }: { id: string }) => {
-            return getTypeNameFromId(id);
+          __resolveType: ({
+            _stitchedTypeMarker,
+          }: {
+            _stitchedTypeMarker: string;
+          }) => {
+            return getTypeNameFromId(_stitchedTypeMarker);
           },
         },
       },
     }),
   };
-  subschemas.push(relaySubschemaConfig);
+  subschemas.push(MedleySubschemaConfig);
   return subschemas;
 }
