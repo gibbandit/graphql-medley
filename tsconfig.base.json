@@ -10,13 +10,27 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@graphql-medley/gateway": ["libs/gateway/src/index.ts"]
+      "@graphql-medley/gateway": [
+        "libs/gateway/src/index.ts"
+      ],
+      "@graphql-medley/tests/subschema-1": [
+        "libs/tests/subschema-1/src/index.ts"
+      ],
+      "@graphql-medley/tests/subschema-2": [
+        "libs/tests/subschema-2/src/index.ts"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }
