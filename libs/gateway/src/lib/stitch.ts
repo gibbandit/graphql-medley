@@ -2,7 +2,7 @@ import { MergedTypeConfig, SubschemaConfig } from '@graphql-tools/delegate';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { isInterfaceType } from 'graphql';
 
-const defaultMedleyMergeConfig: MergedTypeConfig = {
+const defaultMergeConfig: MergedTypeConfig = {
   entryPoints: [
     {
       fieldName: 'nodes',
@@ -35,7 +35,7 @@ export function stitchMedleySubschemas(
       for (const implementedType of implementations) {
         typeNames.push(implementedType.name);
         subschema.merge = subschema.merge || {};
-        subschema.merge[implementedType.name] = defaultMedleyMergeConfig;
+        subschema.merge[implementedType.name] = defaultMergeConfig;
       }
       subschema.batch = true;
     }
@@ -49,13 +49,13 @@ export function stitchMedleySubschemas(
           nodes(ids: [ID!]!): [Node]!
         }
         interface Node {
-          _stitchedTypeMarker: ID! # marks this type as a medley stitched type
+          _stitchedTypeMarker: ID @deprecated(reason: "medley internal field")
         }
         ${typeNames
           .map(
             (typeName) => /* GraphQL */ `
           type ${typeName} implements Node {
-            _stitchedTypeMarker: ID! # marks this type as a medley stitched type
+            _stitchedTypeMarker: ID @deprecated(reason: "medley internal field")
           }
         `
           )
@@ -63,18 +63,15 @@ export function stitchMedleySubschemas(
       `,
       resolvers: {
         Query: {
-          node: (_, { id }: { id: string }) => ({ _stitchedTypeMarker: id }),
+          node: (_, { id }: { id: string }) => ({
+            __typename: getTypeNameFromId(id),
+            _stitchedTypeMarker: id,
+          }),
           nodes: (_, { ids }: { ids: string[] }) => {
-            return ids.map((id) => ({ _stitchedTypeMarker: id }));
-          },
-        },
-        Node: {
-          __resolveType: ({
-            _stitchedTypeMarker,
-          }: {
-            _stitchedTypeMarker: string;
-          }) => {
-            return getTypeNameFromId(_stitchedTypeMarker);
+            return ids.map((id) => ({
+              __typename: getTypeNameFromId(id),
+              _stitchedTypeMarker: id,
+            }));
           },
         },
       },

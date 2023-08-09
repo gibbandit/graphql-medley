@@ -61,5 +61,16 @@ export async function createGatewaySchema(
     subschemas: stitchMedleySubschemas(subschemas, options.getTypeNameFromId),
     mergeTypes: true,
   });
+  //TODO: switch to remove internal fields once stitch supports batched interface merges again
+  //return removeMedleyInternalFields(schema);
   return schema;
+}
+
+export function removeMedleyInternalFields(schema: GraphQLSchema) {
+  const markerField = '_stitchedTypeMarker';
+  return filterSchema({
+    schema,
+    objectFieldFilter: (_, fieldName) => fieldName !== markerField,
+    interfaceFieldFilter: (_, fieldName) => fieldName !== markerField,
+  });
 }

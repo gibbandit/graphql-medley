@@ -4,6 +4,7 @@ import { schema } from '@graphql-medley/tests/subschema-1';
 
 const yoga = createYoga({
   schema,
+  logging: 'debug',
 });
 
 const server = createServer(yoga);

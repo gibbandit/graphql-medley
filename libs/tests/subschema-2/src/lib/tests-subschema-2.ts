@@ -28,7 +28,7 @@ const type1 = builder.node(Type1, {
 
   name: 'Type1',
   fields: (t) => ({
-    field2: t.exposeString('field2', {}),
+    field2: t.exposeString('field2', { nullable: true }),
   }),
 });
 
