@@ -1,23 +1,7 @@
-import { MergedTypeConfig, SubschemaConfig } from '@graphql-tools/delegate';
+import { SubschemaConfig } from '@graphql-tools/delegate';
+import { batchDelegateToSchema } from '@graphql-tools/batch-delegate';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { isInterfaceType } from 'graphql';
-
-const defaultMergeConfig: MergedTypeConfig = {
-  entryPoints: [
-    {
-      fieldName: 'nodes',
-      selectionSet: '{ id }',
-      key: ({ id: id }) => id,
-      argsFromKeys: (ids) => ({ ids }),
-    },
-    {
-      fieldName: 'nodes',
-      selectionSet: '{ _stitchedTypeMarker }',
-      key: ({ _stitchedTypeMarker: id }) => id,
-      argsFromKeys: (ids) => ({ ids }),
-    },
-  ],
-};
+import { OperationTypeNode, isInterfaceType } from 'graphql';
 
 export function stitchMedleySubschemas(
   subschemas: SubschemaConfig[],
@@ -35,7 +19,38 @@ export function stitchMedleySubschemas(
       for (const implementedType of implementations) {
         typeNames.push(implementedType.name);
         subschema.merge = subschema.merge || {};
-        subschema.merge[implementedType.name] = defaultMergeConfig;
+        subschema.merge[implementedType.name] = {
+          entryPoints: [
+            {
+              selectionSet: '{ id }',
+              resolve(originalResult, context, info) {
+                return batchDelegateToSchema({
+                  schema: subschema,
+                  operation: OperationTypeNode.QUERY,
+                  fieldName: 'nodes',
+                  key: originalResult.id,
+                  argsFromKeys: (ids) => ({ ids }),
+                  context,
+                  info,
+                });
+              },
+            },
+            {
+              selectionSet: '{ _stitchedTypeMarker }',
+              resolve(originalResult, context, info) {
+                return batchDelegateToSchema({
+                  schema: subschema,
+                  operation: OperationTypeNode.QUERY,
+                  fieldName: 'nodes',
+                  key: originalResult._stitchedTypeMarker,
+                  argsFromKeys: (ids) => ({ ids }),
+                  context,
+                  info,
+                });
+              },
+            },
+          ],
+        };
       }
       subschema.batch = true;
     }

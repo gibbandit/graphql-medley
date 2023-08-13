@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@graphql-tools/batch-delegate':
+    specifier: ^9.0.0
+    version: 9.0.0(graphql@16.7.1)
   '@graphql-tools/delegate':
     specifier: ^10.0.0
     version: 10.0.0(graphql@16.7.1)
