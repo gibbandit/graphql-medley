@@ -13,9 +13,11 @@ class Type1 {
   id: string;
 
   field1: string;
+  field3: string;
   constructor(n: string) {
     this.id = n;
     this.field1 = `first field: my id is ${n}`;
+    this.field3 = "I'm a shared field!";
   }
 }
 
@@ -29,6 +31,7 @@ const type1 = builder.node(Type1, {
   name: 'Type1',
   fields: (t) => ({
     field1: t.exposeString('field1', { nullable: true }),
+    field3: t.exposeString('field3', { nullable: true }),
   }),
 });
 

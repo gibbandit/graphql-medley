@@ -22,18 +22,10 @@ export function stitchMedleySubschemas(
         subschema.merge[implementedType.name] = {
           entryPoints: [
             {
+              fieldName: 'nodes',
               selectionSet: '{ id }',
-              resolve(originalResult, context, info) {
-                return batchDelegateToSchema({
-                  schema: subschema,
-                  operation: OperationTypeNode.QUERY,
-                  fieldName: 'nodes',
-                  key: originalResult.id,
-                  argsFromKeys: (ids) => ({ ids }),
-                  context,
-                  info,
-                });
-              },
+              key: ({ id: id }) => id,
+              argsFromKeys: (ids) => ({ ids }),
             },
             {
               selectionSet: '{ _stitchedTypeMarker }',

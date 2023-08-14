@@ -8,7 +8,7 @@ export type GatewayOptions = {
 };
 
 export type SubschemaOptions = {
-  url: string;
-  schema?: GraphQLSchema;
+  endpoint: string;
+  schema: GraphQLSchema;
   headers?: HeadersConfig | ((request?: ExecutionRequest) => HeadersConfig);
 };

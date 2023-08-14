@@ -9,11 +9,11 @@ const schema = createGatewaySchema({
   subschema: [
     {
       schema: subschema1,
-      url: 'http://localhost:3001/graphql',
+      endpoint: 'http://localhost:3001/graphql',
     },
     {
       schema: subschema2,
-      url: 'http://localhost:3002/graphql',
+      endpoint: 'http://localhost:3002/graphql',
     },
   ],
   getTypeNameFromId: (id) => decodeGlobalID(id).typename,
